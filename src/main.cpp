@@ -20,9 +20,20 @@ int main(int argc, char* argv[])
 
     parser.open();
 
-    while (true)
+    auto art = Artigo();
+    art = parser.readLine();
+
+    while (art.id != 0)
     {
-        parser.readLine();
+        std::cout << "Título: " << art.titulo << std::endl;
+        std::cout << "Snippet: " << art.snippet << std::endl;
+        std::cout << "Autores: " << art.autores << std::endl;
+        std::cout << "Citações: " << art.citacoes << std::endl;
+        std::cout << "Atualização: " << art.atualizacao << std::endl;
+        std::cout << "Ano: " << art.ano << std::endl;
+        std::cout << "Id: " << art.id << std::endl;
+
+        art = parser.readLine();
     }
 
     parser.close();
