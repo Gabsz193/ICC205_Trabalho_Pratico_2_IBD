@@ -66,6 +66,8 @@ int main(int argc, char* argv[])
     int count = 0;
     int erros = 0;
 
+
+
     while (art.id != 0)
     {
         // Insere o artigo no sistema de indexação

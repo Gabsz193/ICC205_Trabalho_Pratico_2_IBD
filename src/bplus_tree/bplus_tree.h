@@ -38,6 +38,7 @@ private:
     long searchInNode(long node_offset, const KeyType& key);
     void splitChild(Node& parent, int index, Node& child);
     void insertNonFull(long node_offset, const KeyType& key, long value);
+    void copyKey(KeyType& dest, const KeyType& src);
 
 public:
     BPlusTree(const std::string& fname, int block_size);

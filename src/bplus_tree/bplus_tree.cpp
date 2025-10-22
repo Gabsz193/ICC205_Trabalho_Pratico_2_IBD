@@ -142,6 +142,20 @@ void BPlusTree<KeyType>::readNode(long offset, Node& node)
 }
 
 template <typename KeyType>
+void BPlusTree<KeyType>::copyKey(KeyType& dest, const KeyType& src)
+{
+    dest = src; // Atribuição simples funciona
+}
+
+// Especialização para strings
+template <>
+void BPlusTree<char[300]>::copyKey(char (&dest)[300], const char (&src)[300])
+{
+    strncpy(dest, src, 300);
+    dest[299] = '\0'; // Garante null termination
+}
+
+template <typename KeyType>
 void BPlusTree<KeyType>::insert(const KeyType& key, long value)
 {
     if (root_offset == -1)
@@ -149,7 +163,7 @@ void BPlusTree<KeyType>::insert(const KeyType& key, long value)
         // Cria raiz
         Node root(order, true);
 
-        root.keys[0] = key;
+        copyKey(root.keys[0], key);
         root.values[0] = value;
         root.num_keys = 1;
 
@@ -173,6 +187,8 @@ void BPlusTree<KeyType>::insert(const KeyType& key, long value)
         root_offset = new_root_offset;
         writeNode(root_offset, new_root);
 
+        std::cout << "Vindo aqui 1" << std::endl;
+
         insertNonFull(root_offset, key, value);
     }
     else
@@ -186,6 +202,7 @@ void BPlusTree<KeyType>::insertNonFull(long node_offset, const KeyType& key, lon
 {
     Node node(order, false);
     readNode(node_offset, node);
+    std::cout << "Vindo aqui 2" << std::endl;
 
     if (node.is_leaf)
     {
@@ -194,12 +211,12 @@ void BPlusTree<KeyType>::insertNonFull(long node_offset, const KeyType& key, lon
 
         while (i >= 0 && compareKeys(key, node.keys[i]) < 0)
         {
-            node.keys[i + 1] = node.keys[i];
+            copyKey(node.keys[i + 1], node.keys[i]);
             node.values[i + 1] = node.values[i];
             i--;
         }
 
-        node.keys[i + 1] = key;
+        copyKey(node.keys[i + 1], key);
         node.values[i + 1] = value;
         node.num_keys++;
 
@@ -207,6 +224,8 @@ void BPlusTree<KeyType>::insertNonFull(long node_offset, const KeyType& key, lon
     }
     else
     {
+        std::cout << "Vindo aqui 3" << std::endl;
+
         // Encontra filho correto
         int i = node.num_keys - 1;
         while (i >= 0 && compareKeys(key, node.keys[i]) < 0)
@@ -215,8 +234,12 @@ void BPlusTree<KeyType>::insertNonFull(long node_offset, const KeyType& key, lon
         }
         i++;
 
+
+
         Node child(order, false);
         readNode(node.children[i], child);
+
+
 
         if (child.num_keys == max_keys)
         {
@@ -229,8 +252,38 @@ void BPlusTree<KeyType>::insertNonFull(long node_offset, const KeyType& key, lon
             }
         }
 
+        std::cout << "Vindo aqui 5" << std::endl;
+
         insertNonFull(node.children[i], key, value);
     }
+}
+
+template <typename KeyType>
+long BPlusTree<KeyType>::searchInNode(long node_offset, const KeyType& key)
+{
+    Node node(order, false);
+    readNode(node_offset, node);
+
+    int i = 0;
+    while (i < node.num_keys && compareKeys(key, node.keys[i]) > 0)
+    {
+        i++;
+    }
+
+    if (i < node.num_keys && compareKeys(key, node.keys[i]) == 0)
+    {
+        if (node.is_leaf)
+        {
+            return node.values[i];
+        }
+    }
+
+    if (node.is_leaf)
+    {
+        return -1;
+    }
+
+    return searchInNode(node.children[i], key);
 }
 
 template <typename KeyType>
@@ -243,7 +296,7 @@ void BPlusTree<KeyType>::splitChild(Node& parent, int index, Node& child)
     // Copia metade das chaves para novo nó
     for (int i = 0; i < new_child.num_keys; i++)
     {
-        new_child.keys[i] = child.keys[mid + i];
+        copyKey(new_child.keys[i], child.keys[mid + i]);
         new_child.values[i] = child.values[mid + i];
     }
 
@@ -275,11 +328,11 @@ void BPlusTree<KeyType>::splitChild(Node& parent, int index, Node& child)
     // Insere chave do meio no pai
     for (int i = parent.num_keys; i > index; i--)
     {
-        parent.keys[i] = parent.keys[i - 1];
+        copyKey(parent.keys[i], parent.keys[i - 1]);
         parent.children[i + 1] = parent.children[i];
     }
 
-    parent.keys[index] = child.keys[mid];
+    copyKey(parent.keys[index], child.keys[mid]);
     parent.children[index + 1] = (child.is_leaf) ? child.next_leaf : allocateNode(false);
     parent.num_keys++;
 

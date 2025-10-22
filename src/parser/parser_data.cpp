@@ -74,7 +74,6 @@ Artigo DataParser::readLine()
         std::smatch match(*it);
         std::string captured_group = match[1].str();
 
-        std::cout << captured_group << std::endl;
         switch (idx)
         {
         case 0:

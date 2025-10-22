@@ -68,9 +68,15 @@ bool IndexManager::insertArticle(const Artigo& artigo)
     // 2. Insere no índice primário (ID -> offset)
     primary_index->insert(artigo.id, offset);
 
+
+
     // 3. Insere no índice secundário (Título -> offset)
     char titulo_copy[300];
     strncpy(titulo_copy, artigo.titulo, 300);
+
+
+
+
     titulo_copy[299] = '\0'; // Garante null termination
     secondary_index->insert(titulo_copy, offset);
 
