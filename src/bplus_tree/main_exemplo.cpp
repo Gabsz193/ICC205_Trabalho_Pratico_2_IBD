@@ -15,8 +15,8 @@ int main() {
     BPlusTree<int, ORDEM_ESCOLHIDA_PRIMARIA> arvore_int;
     BPlusTree<ChaveSecundaria, ORDEM_ESCOLHIDA_SECUNDARIA> arvore_sec;
     
-    const char* NOME_ARQUIVO_INDICE_PRIMARIO = "./arquivos_indice/indice_primario.bin";
-    const char* NOME_ARQUIVO_INDICE_SECUNDARIO = "./arquivos_indice/indice_secundario.bin";
+    const char* NOME_ARQUIVO_INDICE_PRIMARIO = "indice_primario.bin";
+    const char* NOME_ARQUIVO_INDICE_SECUNDARIO = "indice_secundario.bin";
     
     // --- Informações de Tamanho ---
     const size_t TAMANHO_TIPO_NO_INT = sizeof(BPlusTree<int, ORDEM_ESCOLHIDA_PRIMARIA>::TipoNo); 
