@@ -1,0 +1,244 @@
+#include "arvorebmais.hpp"
+#include <iostream>
+#include <cstdio>
+#include <ctime>
+#include <vector>
+#include <string>
+
+int main() {
+
+    // A ordem é um parâmetro
+    const int ORDEM_ESCOLHIDA_PRIMARIA = 254;
+    const int ORDEM_ESCOLHIDA_SECUNDARIA = 6;
+    
+    // Instanciando as árvores
+    BPlusTree<int, ORDEM_ESCOLHIDA_PRIMARIA> arvore_int;
+    BPlusTree<ChaveSecundaria, ORDEM_ESCOLHIDA_SECUNDARIA> arvore_sec;
+    
+    const char* NOME_ARQUIVO_INDICE_PRIMARIO = "./arquivos_indice/indice_primario.bin";
+    const char* NOME_ARQUIVO_INDICE_SECUNDARIO = "./arquivos_indice/indice_secundario.bin";
+    
+    // --- Informações de Tamanho ---
+    const size_t TAMANHO_TIPO_NO_INT = sizeof(BPlusTree<int, ORDEM_ESCOLHIDA_PRIMARIA>::TipoNo); 
+    const size_t TAMANHO_TIPO_NO_STR = sizeof(BPlusTree<ChaveSecundaria, ORDEM_ESCOLHIDA_SECUNDARIA>::TipoNo);
+
+    std::cout << "--- Informacoes de Configuracao ---" << std::endl;
+    std::cout << "Tamanho de Bloco: " << TAMANHO_BLOCO << " bytes" << std::endl;
+    std::cout << "Tamanho ChaveSecundaria (struct): " << sizeof(ChaveSecundaria) << " bytes" << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "Indice Primario (int):" << std::endl;
+    std::cout << "  Ordem (m): " << BPlusTree<int, ORDEM_ESCOLHIDA_PRIMARIA>::ORDEM << std::endl; 
+    std::cout << "  Max Chaves (2m): " << BPlusTree<int, ORDEM_ESCOLHIDA_PRIMARIA>::MAX_CHAVES << std::endl;
+    std::cout << "  Tamanho do No (sizeof): " << TAMANHO_TIPO_NO_INT << " bytes" << std::endl;
+
+    std::cout << "Indice Secundario (ChaveSecundaria):" << std::endl;
+    std::cout << "  Ordem (m): " << BPlusTree<ChaveSecundaria, ORDEM_ESCOLHIDA_SECUNDARIA>::ORDEM << std::endl; 
+    std::cout << "  Max Chaves (2m): " << BPlusTree<ChaveSecundaria, ORDEM_ESCOLHIDA_SECUNDARIA>::MAX_CHAVES << std::endl;
+    std::cout << "  Tamanho do No (sizeof): " << TAMANHO_TIPO_NO_STR << " bytes" << std::endl;
+
+    if (TAMANHO_TIPO_NO_INT > TAMANHO_BLOCO) {
+        std::cerr << "ERRO: O tamanho da estrutura do No PRIMARIO excede o TAMANHO_BLOCO. Recalcule a ORDEM." << std::endl;
+        return 1;
+    }
+    if (TAMANHO_TIPO_NO_STR > TAMANHO_BLOCO) {
+        std::cerr << "ERRO: O tamanho da estrutura do No SECUNDARIO excede o TAMANHO_BLOCO. Recalcule a ORDEM." << std::endl;
+        return 1;
+    }
+    
+    // --- Abertura dos Arquivos ---
+    FILE* arquivo_indice_primario = std::fopen(NOME_ARQUIVO_INDICE_PRIMARIO, "w+b");
+    if (arquivo_indice_primario == nullptr) {
+        perror("Erro ao criar o arquivo de indice primario");
+        return 1;
+    }
+    FILE* arquivo_indice_secundario = std::fopen(NOME_ARQUIVO_INDICE_SECUNDARIO, "w+b");
+    if (arquivo_indice_secundario == nullptr) {
+        perror("Erro ao criar o arquivo de indice secundario");
+        std::fclose(arquivo_indice_primario);
+        return 1;
+    }
+
+    int n;
+    std::cout << "\nDigite o numero de elementos a inserir (ID de 1 ate N): ";
+    if (!(std::cin >> n) || n < 0) {
+        std::cout << "Entrada invalida." << std::endl;
+        std::fclose(arquivo_indice_primario);
+        std::fclose(arquivo_indice_secundario);
+        return 1;
+    }
+
+    // =================================================================
+    // --- TESTE INDICE PRIMARIO (int) ---
+    // =================================================================
+    std::cout << "\n--- TESTE INDICE PRIMARIO (int) ---" << std::endl;
+    
+    // --- Teste de Inserção (Primário) ---
+    std::cout << "Iniciando insercao de " << n << " elementos (int)..." << std::endl;
+    long long total_blocos_insercao_primario = 0;
+    std::clock_t inicio_insercao_primario = std::clock();
+    
+    for (int i = 1; i <= n; i++) {
+        int blocos_op = 0;
+        // O offset de dados é simulado (i * 100)
+        arvore_int.insere(arquivo_indice_primario, i, (DadosOffset)i * 100, &blocos_op);
+        total_blocos_insercao_primario += blocos_op;
+    }
+        
+    std::clock_t fim_insercao_primario = std::clock();
+    double tempo_insercao_primario = ((double)(fim_insercao_primario - inicio_insercao_primario)) / CLOCKS_PER_SEC;
+    
+    std::cout << "Tempo total de insercao (Primario): " << tempo_insercao_primario << " segundos" << std::endl;
+    std::cout << "Total de blocos lidos/escritos (Insercao Primario): " << total_blocos_insercao_primario << std::endl;
+    std::cout << "Media de blocos lidos/escritos por insercao (Primario): " << (double)total_blocos_insercao_primario / n << std::endl;
+
+
+    if (n <= 50) { 
+        std::cout << "\n--- Estrutura da Arvore B+ (Primario) ---\n";
+        arvore_int.imprime(arquivo_indice_primario, arvore_int.raiz, 0);
+        std::cout << "-------------------------------------------\n";
+    }
+
+    // --- Teste de Busca (Primário) ---
+    std::cout << "\n--- Teste de Busca (Primario) ---\n";
+    bool flag_busca_ok_primario = true;
+    long long total_blocos_buscas_primario = 0;
+    int erros_encontrados_primario = 0;
+    
+    std::clock_t inicio_busca_primario = std::clock();
+    
+    for (int i = 1; i <= n; i++) {
+        int blocos_lidos_busca = 0;
+        DadosOffset offset_dados = arvore_int.busca(arquivo_indice_primario, i, &blocos_lidos_busca);
+        
+        if (offset_dados == OFFSET_NULO){
+            flag_busca_ok_primario = false;
+            if (erros_encontrados_primario < 50) 
+                std::cout << "ERRO (Primario): Chave " << i << " nao encontrada!" << std::endl;
+            erros_encontrados_primario++;
+        }
+        else if (offset_dados != (DadosOffset)i * 100) {
+            flag_busca_ok_primario = false;
+            if (erros_encontrados_primario < 50) 
+                std::cout << "ERRO (Primario): Offset para Chave " << i << " incorreto! Esperado: " << i * 100 << ", Encontrado: " << offset_dados << std::endl;
+            erros_encontrados_primario++;
+        }
+        total_blocos_buscas_primario += blocos_lidos_busca;
+    }
+    
+    std::clock_t fim_busca_primario = std::clock();
+    double tempo_busca_primario = ((double)(fim_busca_primario - inicio_busca_primario)) / CLOCKS_PER_SEC;
+    
+    std::cout << "Tempo total de busca (Primario): " << tempo_busca_primario << " segundos" << std::endl;
+    std::cout << "Total de blocos lidos (Busca Primario): " << total_blocos_buscas_primario << std::endl;
+    std::cout << "Media de blocos lidos/busca (Primario): " << (double)total_blocos_buscas_primario / n << std::endl;
+
+    if (flag_busca_ok_primario && erros_encontrados_primario == 0){
+        std::cout << "Busca (Primario): OK! Todos encontrados com offsets corretos.\n";
+    } else {
+        std::cout << "Busca (Primario): FALHOU! (" << erros_encontrados_primario << " erros).\n";
+    }
+
+    // =================================================================
+    // --- TESTE INDICE SECUNDÁRIO (ChaveSecundaria) ---
+    // =================================================================
+    std::cout << "\n--- TESTE INDICE SECUNDARIO (ChaveSecundaria) ---" << std::endl;
+
+    // --- Teste de Inserção (Secundário) ---
+    std::cout << "Iniciando insercao de " << n << " elementos (ChaveSecundaria)..." << std::endl;
+    long long total_blocos_insercao_secundario = 0;
+    std::clock_t inicio_insercao_secundario = std::clock();
+    
+    // Para gerar chaves "Titulo_0000001", "Titulo_0000002", etc.
+    char buffer_titulo[TAM_CHAVE_TITULO + 1]; 
+    
+    for (int i = 1; i <= n; i++) {
+        // Cria a chave secundária (string)
+        std::sprintf(buffer_titulo, "Titulo_%08d", i);
+        ChaveSecundaria chave_sec(buffer_titulo);
+        
+        // O offset de dados é o *mesmo* do primário, apontando para o registro i
+        DadosOffset offset_dados = (DadosOffset)i * 100; 
+
+        int blocos_op = 0;
+        arvore_sec.insere(arquivo_indice_secundario, chave_sec, offset_dados, &blocos_op);
+        total_blocos_insercao_secundario += blocos_op;
+    }
+        
+    std::clock_t fim_insercao_secundario = std::clock();
+    double tempo_insercao_secundario = ((double)(fim_insercao_secundario - inicio_insercao_secundario)) / CLOCKS_PER_SEC;
+    
+    std::cout << "Tempo total de insercao (Secundario): " << tempo_insercao_secundario << " segundos" << std::endl;
+    std::cout << "Total de blocos lidos/escritos (Insercao Secundario): " << total_blocos_insercao_secundario << std::endl;
+    std::cout << "Media de blocos lidos/escritos por insercao (Secundario): " << (double)total_blocos_insercao_secundario / n << std::endl;
+
+
+    if (n <= 50) { 
+        std::cout << "\n--- Estrutura da Arvore B+ (Secundario) ---\n";
+        arvore_sec.imprime(arquivo_indice_secundario, arvore_sec.raiz, 0);
+        std::cout << "---------------------------------------------\n";
+    }
+
+    // --- Teste de Busca (Secundário) ---
+    std::cout << "\n--- Teste de Busca (Secundario) ---\n";
+    bool flag_busca_ok_secundario = true;
+    long long total_blocos_buscas_secundario = 0;
+    int erros_encontrados_secundario = 0;
+    
+    std::clock_t inicio_busca_secundario = std::clock();
+    
+    for (int i = 1; i <= n; i++) {
+        // Recria a chave que se quer buscar
+        std::sprintf(buffer_titulo, "Titulo_%08d", i);
+        ChaveSecundaria chave_sec(buffer_titulo);
+        DadosOffset offset_esperado = (DadosOffset)i * 100;
+
+        int blocos_lidos_busca = 0;
+        DadosOffset offset_dados = arvore_sec.busca(arquivo_indice_secundario, chave_sec, &blocos_lidos_busca);
+        
+        if (offset_dados == OFFSET_NULO){
+            flag_busca_ok_secundario = false;
+            if (erros_encontrados_secundario < 50) 
+                std::cout << "ERRO (Secundario): Chave " << chave_sec.titulo << " nao encontrada!" << std::endl;
+            erros_encontrados_secundario++;
+        }
+        else if (offset_dados != offset_esperado) {
+            flag_busca_ok_secundario = false;
+            if (erros_encontrados_secundario < 50) 
+                std::cout << "ERRO (Secundario): Offset para Chave " << chave_sec.titulo << " incorreto! Esperado: " << offset_esperado << ", Encontrado: " << offset_dados << std::endl;
+            erros_encontrados_secundario++;
+        }
+        total_blocos_buscas_secundario += blocos_lidos_busca;
+    }
+    
+    std::clock_t fim_busca_secundario = std::clock();
+    double tempo_busca_secundario = ((double)(fim_busca_secundario - inicio_busca_secundario)) / CLOCKS_PER_SEC;
+    
+    std::cout << "Tempo total de busca (Secundario): " << tempo_busca_secundario << " segundos" << std::endl;
+    std::cout << "Total de blocos lidos (Busca Secundario): " << total_blocos_buscas_secundario << std::endl;
+    std::cout << "Media de blocos lidos/busca (Secundario): " << (double)total_blocos_buscas_secundario / n << std::endl;
+
+    if (flag_busca_ok_secundario && erros_encontrados_secundario == 0){
+        std::cout << "Busca (Secundario): OK! Todos encontrados com offsets corretos.\n";
+    } else {
+        std::cout << "Busca (Secundario): FALHOU! (" << erros_encontrados_secundario << " erros).\n";
+    }
+
+
+    // --- Tamanho dos Arquivos ---
+    std::cout << "\n--- Tamanho Final dos Arquivos ---" << std::endl;
+    std::fseek(arquivo_indice_primario, 0, SEEK_END);
+    long tamanho_arquivo_primario = std::ftell(arquivo_indice_primario);
+    std::cout << "Arquivo Primario ('" << NOME_ARQUIVO_INDICE_PRIMARIO << "'): " << tamanho_arquivo_primario 
+              << " bytes (" << tamanho_arquivo_primario / 1048576.0 << " MB)" << std::endl;
+
+    std::fseek(arquivo_indice_secundario, 0, SEEK_END);
+    long tamanho_arquivo_secundario = std::ftell(arquivo_indice_secundario);
+    std::cout << "Arquivo Secundario ('" << NOME_ARQUIVO_INDICE_SECUNDARIO << "'): " << tamanho_arquivo_secundario 
+              << " bytes (" << tamanho_arquivo_secundario / 1048576.0 << " MB)" << std::endl;
+
+    std::fclose(arquivo_indice_primario);
+    std::fclose(arquivo_indice_secundario);
+    
+    return 0;
+}
