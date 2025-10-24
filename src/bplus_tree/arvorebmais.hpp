@@ -24,7 +24,6 @@ struct ChaveSecundaria {
     bool operator<(const ChaveSecundaria& other) const { return std::strcmp(titulo, other.titulo) < 0; }
     bool operator==(const ChaveSecundaria& other) const { return std::strcmp(titulo, other.titulo) == 0; }
     bool operator>(const ChaveSecundaria& other) const { return std::strcmp(titulo, other.titulo) > 0; }
-    // --- CORREÇÃO AQUI ---
     bool operator>=(const ChaveSecundaria& other) const { return std::strcmp(titulo, other.titulo) >= 0; }
     // ---------------------
     ChaveSecundaria() { titulo[0] = '\0'; }
@@ -41,7 +40,7 @@ template <typename T, int Ordem>
 class BPlusTree {
 
 public: 
-    // Tornamos públicos para que a main() possa fazer os cálculos de sizeof
+    // Públicos para que a main() possa fazer os cálculos de sizeof
     // e imprimir os valores.
 
     // --- Constantes da Ordem da Árvore ---
@@ -102,7 +101,6 @@ private:
 
     int encontraPosicao(TipoNo* no, const T& chave) {
         int pos = 0;
-        // Esta lógica agora funciona pois ChaveSecundaria tem operator>=
         while (pos < no->num_chaves && chave >= no->chaves[pos]) {
             pos++;
         }
@@ -150,7 +148,6 @@ private:
 
         *chave_promovida = nova_folha_memoria->chaves[0]; 
     }
-    // ----------------------------------------------------------------
 
     void insereEmNoInterno(TipoNo* no, int pos, const T& chave, BlocoOffset offset_filho_direito) {
         // Deslocamento de chaves (pos em diante)
@@ -260,7 +257,6 @@ private:
         // A checagem de tipo é feita em tempo de compilação, 
         // o compilador otimiza isso.
         if (std::is_same<T, ChaveSecundaria>::value) {
-            // --- CORREÇÃO AQUI ---
             std::cout << "\"" << chave << "\" ";
         } else {
             std::cout << chave << " ";
@@ -279,15 +275,12 @@ public:
         if (raiz == OFFSET_NULO) { 
             TipoNo* nova_raiz = criaNo(true);
             raiz = obter_novo_offset(arquivo_indice);
-            // --- CORREÇÃO AQUI (Contabilizar escrita) ---
             *blocos_lidos_e_escritos += escrever_no_no_disco(arquivo_indice, raiz, nova_raiz);
             delete nova_raiz;
         }
 
         T chave_promovida;
         BlocoOffset offset_novo_filho = OFFSET_NULO;
-
-        // --- CORREÇÃO AQUI (Removido o &) ---
         BlocoOffset offset_retorno = insereRecursivo(arquivo_indice, raiz, chave, offset_dados,
                                                     &chave_promovida, &offset_novo_filho, 
                                                     blocos_lidos_e_escritos); 
@@ -301,7 +294,6 @@ public:
             nova_raiz->num_chaves = 1;
             
             BlocoOffset novo_offset_raiz = obter_novo_offset(arquivo_indice);
-            // --- CORREÇÃO AQUI (Contabilizar escrita) ---
             *blocos_lidos_e_escritos += escrever_no_no_disco(arquivo_indice, novo_offset_raiz, nova_raiz);
             raiz = novo_offset_raiz;
             delete nova_raiz;
@@ -334,7 +326,6 @@ public:
             return offset_dados; // Retorna OFFSET_NULO se não encontrado
         }
 
-        // A função encontraPosicao() agora funciona para ChaveSecundaria
         int pos = encontraPosicao(no_atual, chave);
         BlocoOffset proximo_offset = no_atual->apontadores[pos];
 
