@@ -16,7 +16,7 @@ int main(int argc, char *argv[]) {
     const char* NOME_ARQUIVO_INDICE_PRIMARIO = "indice_primario.idx";
 
     BPlusTree<int, ORDEM_PRIMARIA> arvore_prim;
-    FileManager fm(100, 4, "dados.dat");
+    FileManager fm(100000, 10, "dados.dat");
 
     FILE* arquivo_indice_primario = std::fopen(NOME_ARQUIVO_INDICE_PRIMARIO, "w+b");
     if (arquivo_indice_primario == nullptr) { perror("Erro ao criar o arquivo de indice primario"); return 1; }
@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     std::cout << id << std::endl;
 
     DadosOffset offset_encontrado = arvore_prim.busca(arquivo_indice_primario, id, &blocos_lidos_busca);
-
+//
     if (offset_encontrado == OFFSET_NULO) {
         std::cout << "Chave não encontrada" << std::endl;
     } else {
@@ -36,9 +36,6 @@ int main(int argc, char *argv[]) {
         fm.readFromOffset(offset_encontrado, art);
         art.imprimir();
     }
-
-
-    std::cout << "Seek2" << std::endl;
 
     return 0;
 }
