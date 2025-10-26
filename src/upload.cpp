@@ -4,35 +4,92 @@
 
 #include <iostream>
 
+#include "arg_parser/arg_parser.h"
 #include "bplus_tree/arvorebmais.hpp"
 #include "file_manager/FileManager.h"
+#include "logger/logger.h"
 #include "parser/parser_data.h"
+
+const char* PROGRAM_NAME = "upload";
 
 int main(int argc, char *argv[]) {
 
-    // Como se lê e escreve em exatos blocos na árvore b+,
-    // a ordem deve ser escolhida de modo a maximizar a relação sizeof(tipoNo) <= tamanho do bloco
-    // Para a chave primaria, ordem 254 => sizeof(tipoNo) == 4088
-    // Para a chave secundaria, ordem 6 => sizeof(tipoNo) == 3984
+    logger(PROGRAM_NAME, "Iniciando programa");
+
+    char* indice_prim_filename = NULL;
+    char* indice_sec_filename = NULL;
+    char* dados_filename = NULL;
+    char* input_filename = NULL;
+
+    Argument defs[] = {
+        {
+            .long_name = "--indice-prim",
+            .short_name = 'p',
+            .help_text = "Nome do arquivo de índice primário",
+            .type = ARG_TYPE_STRING,
+            .required = 1,
+            .value = &indice_prim_filename,
+            .found = 0
+        },
+        {
+            .long_name = "--indice-sec",
+            .short_name = 's',
+            .help_text = "Nome do arquivo de índice secundário",
+            .type = ARG_TYPE_STRING,
+            .required = 1,
+            .value = &indice_sec_filename,
+            .found = 0
+        },
+        {
+            .long_name = "--input",
+             .short_name = 'i',
+             .help_text = "Caminho para o arquivo de dados de input",
+             .type = ARG_TYPE_STRING,
+             .required = 1,
+             .value = &input_filename,
+             .found = 0
+        },
+        {
+            .long_name = "--dados",
+             .short_name = 'd',
+             .help_text = "Nome do arquivo de dados organizado por hashing",
+             .type = ARG_TYPE_STRING,
+             .required = 1,
+             .value = &dados_filename,
+             .found = 0
+        }
+    };
+
+    const int defs_count = sizeof(defs) / sizeof(Argument);
+
+    const int status = parse_args(argc, argv, defs, defs_count);
+
+    if (status == MISSING_REQUIRED)
+    {
+        logger(PROGRAM_NAME, "(Erro) Faltou algum argumento obrigatório");
+        print_usage(argv[0], defs, defs_count);
+        return -1;
+    }
+
     const int ORDEM_PRIMARIA = 254;
     const int ORDEM_SECUNDARIA = 6;
-    const char* NOME_ARQUIVO_INDICE_PRIMARIO = "indice_primario.idx";
-    const char* NOME_ARQUIVO_INDICE_SECUNDARIO = "indice_secundario.idx";
 
-    FileManager fm(1000, 4, "dados.dat");
+    FileManager fm(1000, 4, dados_filename);
     fm.inicializarArquivo();
 
     BPlusTree<int, ORDEM_PRIMARIA> arvore_prim;
     BPlusTree<ChaveSecundaria, ORDEM_SECUNDARIA> arvore_sec;
 
-    FILE* arquivo_indice_primario = std::fopen(NOME_ARQUIVO_INDICE_PRIMARIO, "w+b");
+    FILE* arquivo_indice_primario = std::fopen(indice_prim_filename, "w+b");
     if (arquivo_indice_primario == nullptr) { perror("Erro ao criar o arquivo de indice primario"); return 1; }
-    FILE* arquivo_indice_secundario = std::fopen(NOME_ARQUIVO_INDICE_SECUNDARIO, "w+b");
+    FILE* arquivo_indice_secundario = std::fopen(indice_sec_filename, "w+b");
     if (arquivo_indice_secundario == nullptr) { perror("Erro ao criar o arquivo de indice secundario"); std::fclose(arquivo_indice_primario); return 1; }
 
-    auto parser = DataParser("/data/data/artigo.csv");
+    auto parser = DataParser(input_filename);
 
     parser.open();
+
+    logger(PROGRAM_NAME, "Arquivos de configuração setados. Começando a indexação dos dados, aguarde.");
 
     auto art = parser.readLine();
 
