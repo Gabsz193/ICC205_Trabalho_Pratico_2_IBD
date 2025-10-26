@@ -34,7 +34,7 @@ Artigo DataParser::readLine()
     if (!this->arquivo.is_open())
     {
         std::cerr << "Ocorreu um erro ao ler a linha do arquivo" << std::endl;
-        return Artigo();
+        return {};
     }
 
     std::string line;

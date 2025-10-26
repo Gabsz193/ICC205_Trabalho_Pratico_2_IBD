@@ -4,8 +4,18 @@
 
 #include <iostream>
 
+#include "artigo/artigo.h"
+#include "file_manager/FileManager.h"
+
 int main(int argc, char *argv[]) {
-    std::cout << "Seek2" << std::endl;
+    FileManager fm(10, 4, "dados.dat");
+
+    Artigo art;
+
+    fm.buscarRegistro(atoi(argv[1]), art);
+
+    art.imprimir();
+
 
     return 0;
 }

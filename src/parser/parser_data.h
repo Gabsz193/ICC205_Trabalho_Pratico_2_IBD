@@ -6,16 +6,7 @@
 #define PARSER_DATA_H
 #include <fstream>
 
-struct Artigo
-{
-    long id;
-    char titulo[300];
-    int ano;
-    char autores[150];
-    int citacoes;
-    time_t atualizacao;
-    char snippet[1024];
-};
+#include "../artigo/artigo.h"
 
 class DataParser
 {
