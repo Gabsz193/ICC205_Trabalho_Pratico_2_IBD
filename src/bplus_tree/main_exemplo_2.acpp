@@ -1,0 +1,182 @@
+#include "arvorebmais.hpp"
+#include <iostream>
+#include <cstdio>
+#include <ctime>
+#include <vector>
+#include <string>
+#include <algorithm> // Necessário para std::sort
+
+int main() {
+
+    // A ordem é um parâmetro
+    const int ORDEM_ESCOLHIDA_PRIMARIA = 1;
+    const int ORDEM_ESCOLHIDA_SECUNDARIA = 1; // Ordem pequena para forçar splits
+    
+    // Instanciando as árvores
+    BPlusTree<int, ORDEM_ESCOLHIDA_PRIMARIA> arvore_int;
+    BPlusTree<ChaveSecundaria, ORDEM_ESCOLHIDA_SECUNDARIA> arvore_sec;
+    
+    const char* NOME_ARQUIVO_INDICE_PRIMARIO = "indice_primario.bin";
+    const char* NOME_ARQUIVO_INDICE_SECUNDARIO = "indice_secundario.bin";
+    
+    // ... (Código de verificação de tamanho omitido para brevidade, é o mesmo) ...
+    // --- Informações de Tamanho ---
+    const size_t TAMANHO_TIPO_NO_INT = sizeof(BPlusTree<int, ORDEM_ESCOLHIDA_PRIMARIA>::TipoNo); 
+    const size_t TAMANHO_TIPO_NO_STR = sizeof(BPlusTree<ChaveSecundaria, ORDEM_ESCOLHIDA_SECUNDARIA>::TipoNo);
+    std::cout << "--- Informacoes de Configuracao ---" << std::endl;
+    std::cout << "Tamanho de Bloco: " << TAMANHO_BLOCO << " bytes" << std::endl;
+    if (TAMANHO_TIPO_NO_INT > TAMANHO_BLOCO) {
+        std::cerr << "ERRO: O tamanho da estrutura do No PRIMARIO excede o TAMANHO_BLOCO. Recalcule a ORDEM." << std::endl;
+        return 1;
+    }
+    if (TAMANHO_TIPO_NO_STR > TAMANHO_BLOCO) {
+        std::cerr << "ERRO: O tamanho da estrutura do No SECUNDARIO excede o TAMANHO_BLOCO. Recalcule a ORDEM." << std::endl;
+        return 1;
+    }
+    
+    // --- Abertura dos Arquivos ---
+    FILE* arquivo_indice_primario = std::fopen(NOME_ARQUIVO_INDICE_PRIMARIO, "w+b");
+    if (arquivo_indice_primario == nullptr) { perror("Erro ao criar o arquivo de indice primario"); return 1; }
+    FILE* arquivo_indice_secundario = std::fopen(NOME_ARQUIVO_INDICE_SECUNDARIO, "w+b");
+    if (arquivo_indice_secundario == nullptr) { perror("Erro ao criar o arquivo de indice secundario"); std::fclose(arquivo_indice_primario); return 1; }
+
+    // =================================================================
+    // --- DADOS CUSTOMIZADOS PARA INSERÇÃO ---
+    // =================================================================
+    int chaves_primarias[] = { 10, 5, 20, 15, 8, 30, 12 };
+    const char* chaves_secundarias[] = {
+        "O Senhor dos Aneis", // -> ID 10
+        "Duna",               // -> ID 5
+        "Fundacao",           // -> ID 20
+        "O Hobbit",           // -> ID 15
+        "Neuromancer",        // -> ID 8
+        "Fundacao",           // -> ID 30 (Duplicata)
+        "Duna"                // -> ID 12 (Duplicata)
+    };
+    int n = sizeof(chaves_primarias) / sizeof(chaves_primarias[0]);
+    std::cout << "\nInserindo " << n << " elementos customizados (IDs e Titulos)..." << std::endl;
+    
+    // =================================================================
+    // --- TESTE INDICE PRIMARIO (int) ---
+    // =================================================================
+    std::cout << "\n--- TESTE INDICE PRIMARIO (int) ---" << std::endl;
+    
+    // --- Teste de Inserção (Primário) ---
+    for (int i = 0; i < n; i++) {
+        int id_chave = chaves_primarias[i];
+        DadosOffset offset_dados = (DadosOffset)id_chave * 100; 
+        int blocos_op = 0;
+        arvore_int.insere(arquivo_indice_primario, id_chave, offset_dados, &blocos_op);
+    }
+    std::cout << "Insercao (Primario) concluida." << std::endl;
+    std::cout << "\n--- Estrutura da Arvore B+ (Primario) ---\n";
+    arvore_int.imprime(arquivo_indice_primario, arvore_int.raiz, 0);
+    std::cout << "-------------------------------------------\n";
+
+    // --- Teste de Busca (Primário) ---
+    std::cout << "\n--- Teste de Busca (Primario) ---\n";
+    bool flag_busca_ok_primario = true;
+    
+    for (int i = 0; i < n; i++) {
+        int id_busca = chaves_primarias[i];
+        DadosOffset offset_esperado = (DadosOffset)id_busca * 100;
+        int blocos_lidos_busca = 0;
+        
+        // <<< USANDO A BUSCA ÚNICA (retorna DadosOffset) >>>
+        DadosOffset offset_encontrado = arvore_int.buscaUnica(arquivo_indice_primario, id_busca, &blocos_lidos_busca);
+        
+        if (offset_encontrado == OFFSET_NULO){
+            flag_busca_ok_primario = false;
+            std::cout << "ERRO (Primario): Chave " << id_busca << " nao encontrada!" << std::endl;
+        }
+        else if (offset_encontrado != offset_esperado) { 
+            flag_busca_ok_primario = false;
+            std::cout << "ERRO (Primario): Offset para Chave " << id_busca << " incorreto! Esperado: " << offset_esperado << ", Encontrado: " << offset_encontrado << std::endl;
+        }
+    }
+    
+    if (flag_busca_ok_primario){
+        std::cout << "Busca (Primario): OK! Todos encontrados com offsets corretos.\n";
+    } else {
+        std::cout << "Busca (Primario): FALHOU!\n";
+    }
+
+    // =================================================================
+    // --- TESTE INDICE SECUNDÁRIO (ChaveSecundaria) ---
+    // =================================================================
+    
+    std::cout << "\n--- TESTE INDICE SECUNDARIO (ChaveSecundaria) ---" << std::endl;
+
+    // --- Teste de Inserção (Secundário) ---
+    for (int i = 0; i < n; i++) {
+        ChaveSecundaria chave_sec(chaves_secundarias[i]);
+        DadosOffset offset_dados = (DadosOffset)chaves_primarias[i] * 100; 
+        int blocos_op = 0;
+        arvore_sec.insere(arquivo_indice_secundario, chave_sec, offset_dados, &blocos_op);
+    }
+    std::cout << "Insercao (Secundario) concluida." << std::endl;
+    std::cout << "\n--- Estrutura da Arvore B+ (Secundario) ---\n";
+    arvore_sec.imprime(arquivo_indice_secundario, arvore_sec.raiz, 0);
+    std::cout << "---------------------------------------------\n";
+
+    // --- Teste de Busca (Secundário) ---
+    std::cout << "\n--- Teste de Busca (Secundario) ---\n";
+    
+    struct TesteBuscaSecundaria {
+        const char* chave_busca;
+        std::vector<DadosOffset> offsets_esperados;
+    };
+    
+    TesteBuscaSecundaria testes_sec[] = {
+        {"Duna", {500, 1200}},
+        {"Fundacao", {2000, 3000}}, // O teste que falhou
+        {"O Hobbit", {1500}},
+        {"Livro Inexistente", {}}, 
+        {"O Senhor dos Aneis", {1000}},
+        {"Neuromancer", {800}}
+    };
+
+    int num_testes_sec = sizeof(testes_sec) / sizeof(testes_sec[0]);
+    bool flag_busca_ok_secundario = true;
+    
+    for (int i = 0; i < num_testes_sec; i++) {
+        auto& teste = testes_sec[i];
+        ChaveSecundaria chave_busca(teste.chave_busca);
+        std::vector<DadosOffset> offsets_esperados = teste.offsets_esperados; 
+        
+        int blocos_lidos_busca = 0;
+        
+        // <<< USANDO A BUSCA MÚLTIPLA (retorna std::vector) >>>
+        std::vector<DadosOffset> offsets_dados = arvore_sec.buscaMultipla(arquivo_indice_secundario, chave_busca, &blocos_lidos_busca);
+        
+        // Ordena os resultados para garantir a comparação
+        std::sort(offsets_dados.begin(), offsets_dados.end());
+        std::sort(offsets_esperados.begin(), offsets_esperados.end()); // Garante que o esperado esteja ordenado
+        
+        if (offsets_dados != offsets_esperados) {
+            flag_busca_ok_secundario = false;
+            std::cout << "ERRO (Secundario): Chave '" << teste.chave_busca << "' falhou!" << std::endl;
+            std::cout << "  Esperado: { ";
+            for(auto off : offsets_esperados) std::cout << off << " ";
+            std::cout << "}" << std::endl;
+            std::cout << "  Encontrado: { ";
+            for(auto off : offsets_dados) std::cout << off << " ";
+            std::cout << "}" << std::endl;
+        } else {
+             std::cout << "Busca (Secundario) por '" << teste.chave_busca << "': OK. Encontrados " << offsets_dados.size() << ".\n";
+        }
+    }
+
+    if (flag_busca_ok_secundario){
+        std::cout << "Busca (Secundario): OK! Todos os casos de teste passaram.\n";
+    } else {
+        std::cout << "Busca (Secundario): FALHOU!\n";
+    }
+
+    // ... (Impressão do tamanho dos arquivos omitida, é a mesma) ...
+
+    std::fclose(arquivo_indice_primario);
+    std::fclose(arquivo_indice_secundario);
+    
+    return 0;
+}
