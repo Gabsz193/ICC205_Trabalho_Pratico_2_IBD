@@ -10,16 +10,20 @@
 
 int main(int argc, char *argv[]) {
 
-    const int ORDEM_ESCOLHIDA_PRIMARIA = 230;
-    const int ORDEM_ESCOLHIDA_SECUNDARIA = 100; // Ordem pequena para forçar splits
+    // Como se lê e escreve em exatos blocos na árvore b+,
+    // a ordem deve ser escolhida de modo a maximizar a relação sizeof(tipoNo) <= tamanho do bloco
+    // Para a chave primaria, ordem 254 => sizeof(tipoNo) == 4088
+    // Para a chave secundaria, ordem 6 => sizeof(tipoNo) == 3984
+    const int ORDEM_PRIMARIA = 254;
+    const int ORDEM_SECUNDARIA = 6;
     const char* NOME_ARQUIVO_INDICE_PRIMARIO = "indice_primario.idx";
     const char* NOME_ARQUIVO_INDICE_SECUNDARIO = "indice_secundario.idx";
 
     FileManager fm(100000, 10, "dados.dat");
     fm.inicializarArquivo();
 
-    BPlusTree<int, ORDEM_ESCOLHIDA_PRIMARIA> arvore_int;
-    BPlusTree<ChaveSecundaria, ORDEM_ESCOLHIDA_SECUNDARIA> arvore_sec;
+    BPlusTree<int, ORDEM_PRIMARIA> arvore_prim;
+    BPlusTree<ChaveSecundaria, ORDEM_SECUNDARIA> arvore_sec;
 
     FILE* arquivo_indice_primario = std::fopen(NOME_ARQUIVO_INDICE_PRIMARIO, "w+b");
     if (arquivo_indice_primario == nullptr) { perror("Erro ao criar o arquivo de indice primario"); return 1; }
@@ -35,11 +39,10 @@ int main(int argc, char *argv[]) {
     while (art.id != 0)
     {
         const long offset_reg = fm.inserirRegistro(art);
-        //
 
         int blocos_op;
 
-        arvore_int.insere(arquivo_indice_primario, art.id, offset_reg, &blocos_op);
+        arvore_prim.insere(arquivo_indice_primario, art.id, offset_reg, &blocos_op);
         arvore_sec.insere(arquivo_indice_secundario, art.titulo, offset_reg, &blocos_op);
 
         art = parser.readLine();
