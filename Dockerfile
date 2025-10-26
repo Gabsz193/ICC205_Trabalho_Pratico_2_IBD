@@ -10,9 +10,8 @@ RUN make all
 FROM debian:bookworm-slim AS runner
 
 WORKDIR /app
+ENV PATH="/app:${PATH}"
 
-COPY --from=builder /app/bin /app
+COPY --from=builder /app/bin/ /app/
 
-ENTRYPOINT ["/app/"]
-
-CMD ["/bin/bash", "-c", "echo 'Erro: Especifique o programa para rodar (upload, findrec, seek1, seek2)'"]
+CMD ["echo", "'Erro: Especifique o programa para rodar (upload, findrec, seek1, seek2)'"]

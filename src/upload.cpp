@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     FILE* arquivo_indice_secundario = std::fopen(NOME_ARQUIVO_INDICE_SECUNDARIO, "w+b");
     if (arquivo_indice_secundario == nullptr) { perror("Erro ao criar o arquivo de indice secundario"); std::fclose(arquivo_indice_primario); return 1; }
 
-    auto parser = DataParser("data/artigo.csv");
+    auto parser = DataParser("/data/data/artigo.csv");
 
     parser.open();
 
