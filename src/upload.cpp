@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
     const char* NOME_ARQUIVO_INDICE_PRIMARIO = "indice_primario.idx";
     const char* NOME_ARQUIVO_INDICE_SECUNDARIO = "indice_secundario.idx";
 
-    FileManager fm(100000, 10, "dados.dat");
+    FileManager fm(1000, 4, "dados.dat");
     fm.inicializarArquivo();
 
     BPlusTree<int, ORDEM_PRIMARIA> arvore_prim;

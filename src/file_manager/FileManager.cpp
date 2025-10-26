@@ -156,3 +156,16 @@ long FileManager::buscarRegistro(int id, Artigo &art) {
 
     return false;
 }
+
+bool FileManager::readFromOffset(long offset, Artigo &art) const {
+    std::ifstream arquivo(this->nomeDoArquivo, std::ios::binary);
+
+    if (!arquivo.is_open()) return false;
+
+    arquivo.seekg(offset);
+
+    arquivo.read(reinterpret_cast<char*>(&art), TAMANHO_REGISTRO);
+
+    arquivo.close();
+    return true;
+}

@@ -36,9 +36,9 @@ private:
         return (long)hashValue * tamanhoBucket;
     }
 
-    bool readBucket(long offset, std::vector<Artigo>& artigos, BucketHeader& header);
-
     bool writeBucket(long offset, const std::vector<Artigo>& registros, const BucketHeader& header);
+
+    bool readBucket(long offset, std::vector<Artigo>& artigos, BucketHeader& header);
 
     long allocateOverflowBucket(const BucketHeader& newHeader);
 public:
@@ -53,6 +53,8 @@ public:
     long inserirRegistro(const Artigo& art);
 
     long buscarRegistro(int id, Artigo& art);
+
+    bool readFromOffset(long offset, Artigo& art) const;
 };
 
 
