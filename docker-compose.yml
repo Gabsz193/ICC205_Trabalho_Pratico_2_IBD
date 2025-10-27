@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  upload:
+    image: trabalho-bd-2
+    command: [ "upload", "-d", "data/data.dat", "-p", "data/prim.idx", "-s", "data/sec.idx", "-i", "data/artigo.csv" ]
+    volumes:
+      - ./data:/app/data
+    restart: "no"
+  findrec:
+    image: trabalho-bd-2
+    entrypoint: ["findrec", "-d", "data/data.dat", "-f"]
+    volumes:
+      - ./data:/app/data
+    restart: "no"
+
+  seek1:
+    image: trabalho-bd-2
+    entrypoint: ["seek1", "-d", "data/data.dat", "-p", "data/prim.idx", "-f"]
+    volumes:
+      - ./data:/app/data
+    restart: "no"
+
+  seek2:
+    image: trabalho-bd-2
+    entrypoint: ["seek2", "-d", "data/data.dat", "-s", "data/sec.idx", "-t"]
+    volumes:
+      - ./data:/app/data
+    restart: "no"
+
