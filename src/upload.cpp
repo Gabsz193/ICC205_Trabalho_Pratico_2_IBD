@@ -93,9 +93,7 @@ int main(int argc, char *argv[]) {
 
     auto art = parser.readLine();
 
-    int quantidade = 5000;
-
-    while (art.id != 0 && quantidade--)
+    while (art.id != 0)
     {
         const long offset_reg = fm.inserirRegistro(art);
 
