@@ -1,7 +1,7 @@
 #include <iostream>
-#include <cmath>       // Para std::floor
-#include <cstddef>     // Para size_t
-#include "arvorebmais.hpp" // Inclui as definições de TAMANHO_BLOCO, BlocoOffset, ChaveSecundaria
+#include <cmath>
+#include <cstddef>
+#include "arvorebmais.hpp"
 
 /**
  * @brief Calcula a ordem (M) da Árvore B+ com base nos tamanhos dos tipos.
@@ -86,9 +86,9 @@ int main() {
         int ordem = calcularOrdemDaArvore(
             TAMANHO_BLOCO,          // 4096
             sizeof(T_secundaria),   // sizeof(ChaveSecundaria) = 301
-            sizeof(BlocoOffset),    // sizeof(long) = 8 (em sistema 64-bit)
+            sizeof(BlocoOffset),    // sizeof(long) = 8
             sizeof(bool),           // 1
-            sizeof(int)             // 4 (comum)
+            sizeof(int)             // 4
         );
 
         std::cout << "---------------------------------" << std::endl;
@@ -119,7 +119,7 @@ int main() {
         int ordem_int = calcularOrdemDaArvore(
             TAMANHO_BLOCO,          // 4096
             sizeof(T_inteira),      // sizeof(int) = 4
-            sizeof(BlocoOffset),    // sizeof(long) = 8 (em sistema 64-bit)
+            sizeof(BlocoOffset),    // sizeof(long) = 8
             sizeof(bool),           // 1
             sizeof(int)             // 4 (comum)
         );
