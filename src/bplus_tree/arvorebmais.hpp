@@ -301,6 +301,58 @@ private:
 public:
     BlocoOffset raiz = OFFSET_NULO;
 
+    /**
+         * @brief Carrega o offset da raiz a partir do cabeçalho do arquivo de índice.
+         * Use esta função após abrir um arquivo existente para inicializar a árvore.
+         * @param arquivo_indice Ponteiro para o arquivo de índice já aberto
+         * @return true se conseguiu ler o offset, false caso contrário
+         */
+    bool carregaRaiz(FILE* arquivo_indice) {
+        if (arquivo_indice == nullptr) {
+            std::cerr << "Erro: arquivo_indice é NULL" << std::endl;
+            return false;
+        }
+
+        std::fseek(arquivo_indice, 0, SEEK_SET);
+        size_t bytes_lidos = std::fread(&raiz, sizeof(BlocoOffset), 1, arquivo_indice);
+
+        if (bytes_lidos != 1) {
+            if (std::feof(arquivo_indice)) {
+                // Arquivo vazio ou novo - raiz permanece OFFSET_NULO
+                raiz = OFFSET_NULO;
+                return true;
+            }
+            std::cerr << "Erro ao ler offset da raiz" << std::endl;
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+         * @brief Salva o offset da raiz no cabeçalho do arquivo de índice.
+         * Use esta função após inserções para persistir a raiz atualizada.
+         * @param arquivo_indice Ponteiro para o arquivo de índice já aberto
+         * @return true se conseguiu escrever o offset, false caso contrário
+         */
+    bool salvaRaiz(FILE* arquivo_indice) {
+        if (arquivo_indice == nullptr) {
+            std::cerr << "Erro: arquivo_indice é NULL" << std::endl;
+            return false;
+        }
+
+        std::fseek(arquivo_indice, 0, SEEK_SET);
+        size_t bytes_escritos = std::fwrite(&raiz, sizeof(BlocoOffset), 1, arquivo_indice);
+        std::fflush(arquivo_indice);
+
+        if (bytes_escritos != 1) {
+            std::cerr << "Erro ao escrever offset da raiz" << std::endl;
+            return false;
+        }
+
+        return true;
+    }
+
     // --- Função Pública: Inserir ---
     void insere(FILE* arquivo_indice, const T& chave, DadosOffset offset_dados, int* blocos_lidos_e_escritos) {
         *blocos_lidos_e_escritos = 0; 

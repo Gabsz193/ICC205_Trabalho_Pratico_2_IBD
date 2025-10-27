@@ -8,7 +8,7 @@
 #include "file_manager/FileManager.h"
 
 int main(int argc, char *argv[]) {
-    FileManager fm(100000, 10, "dados.dat");
+    FileManager fm(1000, 4, "data.dat");
 
     Artigo art;
 

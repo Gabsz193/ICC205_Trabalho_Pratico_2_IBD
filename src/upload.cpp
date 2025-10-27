@@ -93,7 +93,9 @@ int main(int argc, char *argv[]) {
 
     auto art = parser.readLine();
 
-    while (art.id != 0)
+    int quantidade = 5000;
+
+    while (art.id != 0 && quantidade--)
     {
         const long offset_reg = fm.inserirRegistro(art);
 
@@ -106,6 +108,25 @@ int main(int argc, char *argv[]) {
     }
 
     parser.close();
+
+    if (!arvore_prim.salvaRaiz(arquivo_indice_primario)) {
+        logger(PROGRAM_NAME, "(Erro) Falha ao salvar raiz do índice primário");
+        std::fclose(arquivo_indice_primario);
+        std::fclose(arquivo_indice_secundario);
+        return 1;
+    }
+
+    if (!arvore_sec.salvaRaiz(arquivo_indice_secundario)) {
+        logger(PROGRAM_NAME, "(Erro) Falha ao salvar raiz do índice secundário");
+        std::fclose(arquivo_indice_primario);
+        std::fclose(arquivo_indice_secundario);
+        return 1;
+    }
+
+    std::fclose(arquivo_indice_primario);
+    std::fclose(arquivo_indice_secundario);
+
+    logger(PROGRAM_NAME, "Indexação concluída com sucesso!");
 
     return 0;
 }
